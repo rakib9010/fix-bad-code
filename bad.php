@@ -22,52 +22,33 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Services\AccountingService;
 
-class Tenant extends Model{
-    public $accountingService;
+class Tenant extends Model
+{
+	public function getInvoices(): array
+	{
+		return $this->getInvoicesWithStatus('awaiting-payment');
+	}
 
-    function __construct(){
-        $this->accountingService = new \App\Services\AccountingService();
-    }
+	public function getOldInvoices(): array
+	{
+		return $this->getInvoicesWithStatus('paid');
+	}
 
-    public function get_invoices()
-    {
-        $params = array('tenant_id' => $this->id);
-        $invoices = $this->accountingService->getAllInvoices($params);
-        $ap_invoices = array();
-        if (!empty($invoices))
-        {
-            // Loop through all invoices and choose only ones that await payment
-            foreach ($invoices as $i)
-            {
-                if ($i['status'] == 'awaiting-payment')
-                    $ap_invoices[] = $i;
-            }
-            return $ap_invoices;
-        }
+	private function getInvoicesWithStatus(string $status): array
+	{
+		$filtered_invoices = [];
+		$invoices = app(AccountingService::class)->getAllInvoices(['tenant_id' => $this->id]);
 
-        return null;
-    }
+		if ($invoices) {
+			foreach ($invoices as $i) {
+				if ($i['status'] === $status) {
+					$filtered_invoices[] = $i;
+				}
+			}
+		}
 
-    public function get_old_invoices()
-    {
-        $params = array('tenant_id' => $this->id);
-        $invoices = $this->accountingService->getAllInvoices($params);
-
-        if (!empty($invoices)) {
-            $paid_invoices = array();
-
-            // Loop through all invoices and choose only paid ones
-            foreach ($invoices as $i)
-            {
-                if ($i['status'] == 'paid') {
-                    $paid_invoices[] = $i;
-                }
-            }
-
-            return $paid_invoices;
-        }
-    }
-
-    // ...
+		return $filtered_invoices;
+	}
 }
