@@ -38,17 +38,8 @@ class Tenant extends Model
 
 	private function getInvoicesWithStatus(string $status): array
 	{
-		$filtered_invoices = [];
 		$invoices = app(AccountingService::class)->getAllInvoices(['tenant_id' => $this->id]);
 
-		if ($invoices) {
-			foreach ($invoices as $i) {
-				if ($i['status'] === $status) {
-					$filtered_invoices[] = $i;
-				}
-			}
-		}
-
-		return $filtered_invoices;
+		return $invoices ? array_filter($invoices, fn($i) => $i['status'] === $status) : [];
 	}
 }
